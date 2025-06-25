@@ -1,14 +1,9 @@
 import streamlit as st
 import numpy as np
-import av
 from streamlit_webrtc import webrtc_streamer, AudioProcessorBase, WebRtcMode
-
 from answer_engine import AnswerEngine
-from speech_utils import tts_play, stt_transcribe_numpy, tts_play_to_bytes
-
-import tempfile
-from pydub import AudioSegment
-from pydub.playback import play
+from speech_utils import tts_play, stt_transcribe_numpy
+import base64
 
 # 📘 Load the FAQ PDF
 engine = AnswerEngine("ilovepdf_merged.pdf")
@@ -29,16 +24,6 @@ class AudioProcessor(AudioProcessorBase):
             return None
         return np.concatenate(self.frames, axis=1).flatten().astype(np.float32)
 
-# 🔊 Function to play base64-encoded MP3 audio
-def play_base64_audio(b64_audio):
-    import base64
-    decoded = base64.b64decode(b64_audio)
-    temp_audio = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3")
-    temp_audio.write(decoded)
-    temp_audio.flush()
-    audio = AudioSegment.from_file(temp_audio.name, format="mp3")
-    play(audio)
-
 # 🧠 Ask the AI with transcript & voice
 def ask_ai(query):
     st.session_state.chat_history.append(("user", query))
@@ -47,10 +32,12 @@ def ask_ai(query):
     with st.chat_message("user"):
         st.markdown(query)
 
-    # 🔊 Speak the user's input aloud
-    st.info("🔊 Speaking your question...")
-    tts_play(query)
+    # 🔊 Speak the user's question (TTS)
+    audio_data = tts_play(query)
+    if audio_data:
+        st.audio(audio_data, format="audio/mp3")
 
+    # 🤖 Get answer from FAQ
     answer = engine.get_answer(query)
 
     # Out-of-scope handling
@@ -65,13 +52,14 @@ def ask_ai(query):
     with st.chat_message("assistant"):
         st.markdown(answer)
 
-    # 🔊 Speak the bot's answer
-    st.info("🔊 Speaking the answer...")
-    tts_play(answer)
+    # 🔊 Speak the bot's response (TTS)
+    audio_data = tts_play(answer)
+    if audio_data:
+        st.audio(audio_data, format="audio/mp3")
 
 # 🚀 Streamlit app config
 st.set_page_config(page_title="Voice FAQ Bot", layout="centered")
-st.title("🎙️ Offline Voice FAQ Chatbot")
+st.title("🎙️ Voice FAQ Chatbot (Web Compatible)")
 
 # 🔄 Initialize session state
 if "chat_history" not in st.session_state:
@@ -79,7 +67,7 @@ if "chat_history" not in st.session_state:
 if "transcript" not in st.session_state:
     st.session_state.transcript = ""
 
-# 🎧 Setup mic with WebRTC
+# 🎧 Setup mic with WebRTC (will not work on Streamlit Cloud but retained for local use)
 ctx = webrtc_streamer(
     key="mic",
     mode=WebRtcMode.SENDRECV,
@@ -107,11 +95,11 @@ if ctx.state.playing and ctx.audio_processor and st.button("🎤 Speak Now"):
         else:
             st.error("❌ Sorry, I couldn't understand your voice. Try again more clearly.")
 
-# 💬 Text fallback: now speaks user's text + bot response
+# 💬 Text fallback input
 typed = st.chat_input("Or type your question here...")
 if typed:
     ask_ai(typed)
 
-# 📜 Transcript
+# 📜 Transcript display
 with st.expander("📄 Transcript"):
     st.text_area("Conversation Transcript", st.session_state.transcript, height=300)
