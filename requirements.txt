@@ -5,3 +5,9 @@ speechrecognition
 pyttsx3
 scikit-learn
 sentence-transformers
+streamlit-webrtc
+numpy
+soundfile
+pydub
+gtts
+av
