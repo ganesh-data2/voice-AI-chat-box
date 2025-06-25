@@ -1,0 +1,7 @@
+streamlit
+PyMuPDF
+openai
+speechrecognition
+pyttsx3
+scikit-learn
+sentence-transformers
