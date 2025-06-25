@@ -1,4 +1,3 @@
-import pyttsx3
 import speech_recognition as sr
 import uuid
 import os
@@ -8,23 +7,27 @@ import base64
 import io
 from gtts import gTTS
 
-# ✅ Offline TTS using pyttsx3 (plays directly on speakers)
-def tts_play(text: str):
+# ✅ Web-compatible TTS using gTTS and base64-encoded MP3 (Streamlit-friendly)
+def tts_play(text: str) -> str:
     try:
-        engine = pyttsx3.init()
-        engine.say(text)
-        engine.runAndWait()
+        tts = gTTS(text)
+        audio_io = io.BytesIO()
+        tts.write_to_fp(audio_io)
+        audio_io.seek(0)
+        b64_audio = base64.b64encode(audio_io.read()).decode("utf-8")
+        return f"data:audio/mp3;base64,{b64_audio}"
     except Exception as e:
         print(f"❌ TTS Error: {e}")
+        return None
 
-# ✅ STT from NumPy audio array (wav) using Google recognizer
+# ✅ STT from NumPy audio array using Google Speech Recognition
 def stt_transcribe_numpy(audio_array: np.ndarray, sample_rate: int = 48000) -> str:
     filename = f"temp_{uuid.uuid4().hex}.wav"
     try:
-        # Save NumPy audio to WAV
+        # Save audio as WAV file
         sf.write(filename, audio_array, sample_rate)
 
-        # Transcribe using Google STT (online)
+        # Transcribe using recognizer
         recognizer = sr.Recognizer()
         with sr.AudioFile(filename) as source:
             audio = recognizer.record(source)
@@ -42,15 +45,3 @@ def stt_transcribe_numpy(audio_array: np.ndarray, sample_rate: int = 48000) -> s
     finally:
         if os.path.exists(filename):
             os.remove(filename)
-
-# ✅ Optional: TTS that returns base64 MP3 (for future use or saving)
-def tts_play_to_bytes(text: str) -> str:
-    try:
-        tts = gTTS(text)
-        audio_io = io.BytesIO()
-        tts.write_to_fp(audio_io)
-        audio_io.seek(0)
-        return base64.b64encode(audio_io.read()).decode("utf-8")
-    except Exception as e:
-        print(f"❌ TTS encoding error: {e}")
-        return ""
