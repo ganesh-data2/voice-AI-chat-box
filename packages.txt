@@ -1,0 +1,10 @@
+ffmpeg
+libasound2-dev
+portaudio19-dev
+libavformat-dev
+libavcodec-dev
+libavdevice-dev
+libavfilter-dev
+libavutil-dev
+libswscale-dev
+libavresample-dev
