@@ -95,11 +95,22 @@ if ctx.state.playing and ctx.audio_processor and st.button("🎤 Speak Now"):
         else:
             st.error("❌ Sorry, I couldn't understand your voice. Try again more clearly.")
 
-# 💬 Text fallback input
+# 💬 Text fallback input: now speaks both user's text + AI response
 typed = st.chat_input("Or type your question here...")
+
 if typed:
-    ask_ai(typed)
+    # Speak user input
+    user_audio = speak_text(typed)
+    st.audio(user_audio, format="audio/mp3")
+
+    # Get AI answer
+    answer = ask_ai(typed)
+
+    # Speak AI response
+    bot_audio = speak_text(answer)
+    st.audio(bot_audio, format="audio/mp3")
 
 # 📜 Transcript display
 with st.expander("📄 Transcript"):
     st.text_area("Conversation Transcript", st.session_state.transcript, height=300)
+
